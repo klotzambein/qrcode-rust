@@ -1,8 +1,8 @@
 //! Render a QR code into image.
 
-use cast::As;
+use crate::cast::As;
 use std::cmp::max;
-use types::Color;
+use crate::types::Color;
 
 pub mod image;
 pub mod string;

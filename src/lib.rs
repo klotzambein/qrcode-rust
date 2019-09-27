@@ -1,3 +1,5 @@
+//#![no_std]
+
 //! QRCode encoder
 //!
 //! This crate provides a QR code and Micro QR code encoder for binary data.
@@ -260,7 +262,7 @@ impl Index<(usize, usize)> for QrCode {
 
 #[cfg(test)]
 mod tests {
-    use {EcLevel, QrCode, Version};
+    use crate::{EcLevel, QrCode, Version};
 
     #[test]
     fn test_annex_i_qr() {
@@ -319,7 +321,7 @@ mod tests {
 #[cfg(all(test, feature = "image"))]
 mod image_tests {
     use image::{load_from_memory, Luma, Rgb};
-    use {EcLevel, QrCode, Version};
+    use crate::{EcLevel, QrCode, Version};
 
     #[test]
     fn test_annex_i_qr_as_image() {
@@ -347,8 +349,8 @@ mod image_tests {
 
 #[cfg(all(test, feature = "svg"))]
 mod svg_tests {
-    use render::svg::Color as SvgColor;
-    use {EcLevel, QrCode, Version};
+    use crate::render::svg::Color as SvgColor;
+    use crate::{EcLevel, QrCode, Version};
 
     #[test]
     fn test_annex_i_qr_as_svg() {

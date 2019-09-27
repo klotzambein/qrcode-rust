@@ -11,6 +11,7 @@ documentation = "http://docs.rs/qrcode"
 exclude = [
     ".travis.yml", ".gitignore", "test-data/**"
 ]
+edition = "2018"
 
 [badges]
 travis-ci = { repository = "kennytm/qrcode-rust" }

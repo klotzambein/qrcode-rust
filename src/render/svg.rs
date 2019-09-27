@@ -19,8 +19,8 @@
 use std::fmt::Write;
 use std::marker::PhantomData;
 
-use render::{Canvas as RenderCanvas, Pixel};
-use types::Color as ModuleColor;
+use crate::render::{Canvas as RenderCanvas, Pixel};
+use crate::types::Color as ModuleColor;
 
 /// An SVG color.
 #[derive(Copy, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]

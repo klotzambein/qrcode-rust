@@ -2,7 +2,7 @@
 
 use std::ops::Deref;
 
-use types::{EcLevel, QrResult, Version};
+use crate::types::{EcLevel, QrResult, Version};
 
 //------------------------------------------------------------------------------
 //{{{ Error correction primitive
@@ -42,7 +42,7 @@ pub fn create_error_correction_code(data: &[u8], ec_code_size: usize) -> Vec<u8>
 
 #[cfg(test)]
 mod ec_tests {
-    use ec::create_error_correction_code;
+    use crate::ec::create_error_correction_code;
 
     #[test]
     fn test_poly_mod_1() {
@@ -127,8 +127,8 @@ pub fn construct_codewords(rawbits: &[u8], version: Version, ec_level: EcLevel) 
 
 #[cfg(test)]
 mod construct_codewords_test {
-    use ec::construct_codewords;
-    use types::{EcLevel, Version};
+    use crate::ec::construct_codewords;
+    use crate::types::{EcLevel, Version};
 
     #[test]
     fn test_add_ec_simple() {
@@ -183,8 +183,8 @@ pub fn max_allowed_errors(version: Version, ec_level: EcLevel) -> QrResult<usize
 
 #[cfg(test)]
 mod max_allowed_errors_test {
-    use ec::max_allowed_errors;
-    use types::{EcLevel, Version};
+    use crate::ec::max_allowed_errors;
+    use crate::types::{EcLevel, Version};
 
     #[test]
     fn test_low_versions() {

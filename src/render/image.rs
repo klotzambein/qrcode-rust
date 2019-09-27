@@ -1,7 +1,7 @@
 #![cfg(feature="image")]
 
-use render::{Canvas, Pixel};
-use types::Color;
+use crate::render::{Canvas, Pixel};
+use crate::types::Color;
 
 use image::{ImageBuffer, Luma, LumaA, Pixel as ImagePixel, Primitive, Rgb, Rgba};
 
@@ -45,8 +45,8 @@ impl<P: ImagePixel + 'static> Canvas for (P, ImageBuffer<P, Vec<P::Subpixel>>) {
 #[cfg(test)]
 mod render_tests {
     use image::{Luma, Rgba};
-    use render::Renderer;
-    use types::Color;
+    use crate::render::Renderer;
+    use crate::types::Color;
 
     #[test]
     fn test_render_luma8_unsized() {

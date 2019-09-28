@@ -1,11 +1,9 @@
-//#![no_std]
 
 //! QRCode encoder
 //!
 //! This crate provides a QR code and Micro QR code encoder for binary data.
 //!
-#![cfg_attr(feature = "image", doc = "```rust")]
-#![cfg_attr(not(feature = "image"), doc = "```ignore")]
+//!```ignore
 //! extern crate qrcode;
 //! extern crate image;
 //!
@@ -31,78 +29,31 @@
 //! }
 //! ```
 
-#![cfg_attr(feature = "bench", feature(test, external_doc))] // Unstable libraries
-#![cfg_attr(feature = "cargo-clippy", deny(warnings, clippy_pedantic))]
-#![cfg_attr(
-    feature = "cargo-clippy",
-    allow(
-        indexing_slicing,
-        write_literal, // see https://github.com/rust-lang-nursery/rust-clippy/issues/2976
-    )
-)]
-#![cfg_attr(feature = "bench", doc(include = "../README.md"))]
-// ^ make sure we can test our README.md.
-#![cfg_attr(feature = "cargo-clippy", allow())]
+#![no_std]
 
-extern crate checked_int_cast;
-#[cfg(feature = "image")]
-extern crate image;
-#[cfg(feature = "bench")]
-extern crate test;
-
-use std::ops::Index;
+use core::ops::Index;
 
 pub mod bits;
 pub mod canvas;
 mod cast;
 pub mod ec;
 pub mod optimize;
-pub mod render;
 pub mod types;
+pub mod spec;
 
 pub use types::{Color, EcLevel, QrResult, Version};
+use spec::QrSpec;
 
-use cast::As;
 use checked_int_cast::CheckedIntCast;
-use render::{Pixel, Renderer};
+use heapless::Vec;
 
 /// The encoded QR code symbol.
 #[derive(Clone)]
-pub struct QrCode {
-    content: Vec<Color>,
-    version: Version,
-    ec_level: EcLevel,
-    width: usize,
+pub struct QrCode<V: QrSpec> {
+    content: Vec<Color, V::ColorSize>
 }
 
-impl QrCode {
-    /// Constructs a new QR code which automatically encodes the given data.
-    ///
-    /// This method uses the "medium" error correction level and automatically
-    /// chooses the smallest QR code.
-    ///
-    ///     use qrcode::QrCode;
-    ///
-    ///     let code = QrCode::new(b"Some data").unwrap();
-    ///
-    pub fn new<D: AsRef<[u8]>>(data: D) -> QrResult<Self> {
-        Self::with_error_correction_level(data, EcLevel::M)
-    }
-
-    /// Constructs a new QR code which automatically encodes the given data at a
-    /// specific error correction level.
-    ///
-    /// This method automatically chooses the smallest QR code.
-    ///
-    ///     use qrcode::{QrCode, EcLevel};
-    ///
-    ///     let code = QrCode::with_error_correction_level(b"Some data", EcLevel::H).unwrap();
-    ///
-    pub fn with_error_correction_level<D: AsRef<[u8]>>(data: D, ec_level: EcLevel) -> QrResult<Self> {
-        let bits = bits::encode_auto(data.as_ref(), ec_level)?;
-        Self::with_bits(bits, ec_level)
-    }
-
+impl<V: QrSpec> QrCode<V> {
     /// Constructs a new QR code for the given version and error correction
     /// level.
     ///
@@ -116,11 +67,11 @@ impl QrCode {
     ///
     ///     let micro_code = QrCode::with_version(b"123", Version::Micro(1), EcLevel::L).unwrap();
     ///
-    pub fn with_version<D: AsRef<[u8]>>(data: D, version: Version, ec_level: EcLevel) -> QrResult<Self> {
-        let mut bits = bits::Bits::new(version);
+    pub fn with_version<D: AsRef<[u8]>>(data: D) -> QrResult<Self> {
+        let mut bits = bits::Bits::new(V::VERSION);
         bits.push_optimal_data(data.as_ref())?;
-        bits.push_terminator(ec_level)?;
-        Self::with_bits(bits, ec_level)
+        bits.push_terminator(V::EC_LEVEL)?;
+        Self::with_bits(bits)
     }
 
     /// Constructs a new QR code with encoded bits.
@@ -145,39 +96,23 @@ impl QrCode {
     ///     bits.push_terminator(EcLevel::L);
     ///     let qrcode = QrCode::with_bits(bits, EcLevel::L);
     ///
-    pub fn with_bits(bits: bits::Bits, ec_level: EcLevel) -> QrResult<Self> {
-        let version = bits.version();
+    pub fn with_bits(bits: bits::Bits<V>) -> QrResult<Self> {
         let data = bits.into_bytes();
-        let (encoded_data, ec_data) = ec::construct_codewords(&*data, version, ec_level)?;
-        let mut canvas = canvas::Canvas::new(version, ec_level);
+        let (data_ec, data_end) = ec::construct_codewords::<V>(&*data)?;
+        let mut canvas = canvas::Canvas::<V>::new();
         canvas.draw_all_functional_patterns();
-        canvas.draw_data(&*encoded_data, &*ec_data);
+        canvas.draw_data(&data_ec[..data_end], &data_ec[data_end..]);
         let canvas = canvas.apply_best_mask();
-        Ok(Self { content: canvas.into_colors(), version, ec_level, width: version.width().as_usize() })
-    }
-
-    /// Gets the version of this QR code.
-    pub fn version(&self) -> Version {
-        self.version
-    }
-
-    /// Gets the error correction level of this QR code.
-    pub fn error_correction_level(&self) -> EcLevel {
-        self.ec_level
-    }
-
-    /// Gets the number of modules per side, i.e. the width of this QR code.
-    ///
-    /// The width here does not contain the quiet zone paddings.
-    pub fn width(&self) -> usize {
-        self.width
+        let mut content = Vec::new();
+        content.extend(canvas.into_colors());
+        Ok(Self { content })
     }
 
     /// Gets the maximum number of allowed erratic modules can be introduced
     /// before the data becomes corrupted. Note that errors should not be
     /// introduced to functional modules.
     pub fn max_allowed_errors(&self) -> usize {
-        ec::max_allowed_errors(self.version, self.ec_level).expect("invalid version or ec_level")
+        ec::max_allowed_errors::<V>().expect("invalid version or ec_level")
     }
 
     /// Checks whether a module at coordinate (x, y) is a functional module or
@@ -185,81 +120,36 @@ impl QrCode {
     pub fn is_functional(&self, x: usize, y: usize) -> bool {
         let x = x.as_i16_checked().expect("coordinate is too large for QR code");
         let y = y.as_i16_checked().expect("coordinate is too large for QR code");
-        canvas::is_functional(self.version, self.version.width(), x, y)
+        canvas::is_functional(V::VERSION, V::WIDTH, x, y)
     }
 
-    /// Converts the QR code into a human-readable string. This is mainly for
-    /// debugging only.
-    pub fn to_debug_str(&self, on_char: char, off_char: char) -> String {
-        self.render().quiet_zone(false).dark_color(on_char).light_color(off_char).build()
-    }
+    ///// Converts the QR code into a human-readable string. This is mainly for
+    ///// debugging only.
+    //pub fn to_debug_str(&self, on_char: char, off_char: char) -> String {
+    //    self.render().quiet_zone(false).dark_color(on_char).light_color(off_char).build()
+    //}
 
-    /// Converts the QR code to a vector of booleans. Each entry represents the
-    /// color of the module, with "true" means dark and "false" means light.
-    #[deprecated(since = "0.4.0", note = "use `to_colors()` instead")]
-    pub fn to_vec(&self) -> Vec<bool> {
-        self.content.iter().map(|c| *c != Color::Light).collect()
-    }
-
-    /// Converts the QR code to a vector of booleans. Each entry represents the
-    /// color of the module, with "true" means dark and "false" means light.
-    #[deprecated(since = "0.4.0", note = "use `into_colors()` instead")]
-    pub fn into_vec(self) -> Vec<bool> {
-        self.content.into_iter().map(|c| c != Color::Light).collect()
+    /// Converts the QR code to a vector of colors.
+    pub fn to_colors(&self) -> impl Iterator<Item = Color> + '_ {
+        self.content.iter().cloned()
     }
 
     /// Converts the QR code to a vector of colors.
-    pub fn to_colors(&self) -> Vec<Color> {
-        self.content.clone()
-    }
-
-    /// Converts the QR code to a vector of colors.
-    pub fn into_colors(self) -> Vec<Color> {
+    pub fn into_colors(self) -> Vec<Color, V::ColorSize> {
         self.content
-    }
-
-    /// Renders the QR code into an image. The result is an image builder, which
-    /// you may do some additional configuration before copying it into a
-    /// concrete image.
-    ///
-    /// # Examples
-    ///
-    #[cfg_attr(feature = "image", doc = " ```rust")]
-    #[cfg_attr(not(feature = "image"), doc = " ```ignore")]
-    /// # extern crate image;
-    /// # extern crate qrcode;
-    /// # use qrcode::QrCode;
-    /// # use image::Rgb;
-    /// # fn main() {
-    ///
-    /// let image = QrCode::new(b"hello").unwrap()
-    ///                     .render()
-    ///                     .dark_color(Rgb([0, 0, 128]))
-    ///                     .light_color(Rgb([224, 224, 224])) // adjust colors
-    ///                     .quiet_zone(false)          // disable quiet zone (white border)
-    ///                     .min_dimensions(300, 300)   // sets minimum image size
-    ///                     .build();
-    ///
-    /// # }
-    /// ```
-    ///
-    /// Note: the `image` crate itself also provides method to rotate the image,
-    /// or overlay a logo on top of the QR code.
-    pub fn render<P: Pixel>(&self) -> Renderer<P> {
-        let quiet_zone = if self.version.is_micro() { 2 } else { 4 };
-        Renderer::new(&self.content, self.width, quiet_zone)
     }
 }
 
-impl Index<(usize, usize)> for QrCode {
+impl<V: QrSpec> Index<(usize, usize)> for QrCode<V> {
     type Output = Color;
 
     fn index(&self, (x, y): (usize, usize)) -> &Color {
-        let index = y * self.width + x;
+        let index = y * V::WIDTH as usize + x;
         &self.content[index]
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use crate::{EcLevel, QrCode, Version};
@@ -317,6 +207,7 @@ mod tests {
         );
     }
 }
+*/
 
 #[cfg(all(test, feature = "image"))]
 mod image_tests {

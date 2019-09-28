@@ -1,8 +1,8 @@
 use crate::cast::As;
-use std::cmp::{Ordering, PartialOrd};
-use std::default::Default;
-use std::fmt::{Display, Error, Formatter};
-use std::ops::Not;
+use core::cmp::{Ordering, PartialOrd};
+use core::default::Default;
+use core::fmt::{Display, Error, Formatter};
+use core::ops::Not;
 
 //------------------------------------------------------------------------------
 //{{{ QrResult
@@ -38,12 +38,6 @@ impl Display for QrError {
             QrError::InvalidCharacter => "invalid character",
         };
         fmt.write_str(msg)
-    }
-}
-
-impl ::std::error::Error for QrError {
-    fn description(&self) -> &'static str {
-        "QrError"
     }
 }
 

@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use core::fmt::Display;
 
 #[cfg(debug_assertions)]
 use checked_int_cast::CheckedIntCast;

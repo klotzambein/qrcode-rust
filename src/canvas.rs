@@ -9,10 +9,13 @@
 //!     c.apply_mask(MaskPattern::Checkerboard);
 //!     let bools = c.to_bools();
 
-use std::cmp::max;
+use core::cmp::max;
 
 use crate::cast::As;
+use crate::spec::QrSpec;
 use crate::types::{Color, EcLevel, Version};
+
+use heapless::Vec;
 
 //------------------------------------------------------------------------------
 //{{{ Modules
@@ -73,53 +76,50 @@ impl Module {
 
 /// `Canvas` is an intermediate helper structure to render error-corrected data
 /// into a QR code.
-#[derive(Clone)]
-pub struct Canvas {
-    /// The width and height of the canvas (cached as it is needed frequently).
-    width: i16,
-
-    /// The version of the QR code.
-    version: Version,
-
-    /// The error correction level of the QR code.
-    ec_level: EcLevel,
-
+pub struct Canvas<V: QrSpec> {
     /// The modules of the QR code. Modules are arranged in left-to-right, then
     /// top-to-bottom order.
-    modules: Vec<Module>,
+    modules: Vec<Module, V::CanvasSize>,
 }
 
-impl Canvas {
+impl<V: QrSpec> Clone for Canvas<V> {
+    fn clone(&self) -> Self {
+        Canvas { modules: self.modules.clone() }
+    }
+}
+
+impl<V: QrSpec> Canvas<V> {
     /// Constructs a new canvas big enough for a QR code of the given version.
-    pub fn new(version: Version, ec_level: EcLevel) -> Self {
-        let width = version.width();
-        Self { width, version, ec_level, modules: vec![Module::Empty; (width * width).as_usize()] }
+    pub fn new() -> Self {
+        let mut modules = Vec::new();
+        modules.resize((V::WIDTH * V::WIDTH).as_usize(), Module::Empty).unwrap();
+        Self { modules }
     }
 
-    /// Converts the canvas into a human-readable string.
-    #[cfg(test)]
-    fn to_debug_str(&self) -> String {
-        let width = self.width;
-        let mut res = String::with_capacity((width * (width + 1)) as usize);
-        for y in 0..width {
-            res.push('\n');
-            for x in 0..width {
-                res.push(match self.get(x, y) {
-                    Module::Empty => '?',
-                    Module::Masked(Color::Light) => '.',
-                    Module::Masked(Color::Dark) => '#',
-                    Module::Unmasked(Color::Light) => '-',
-                    Module::Unmasked(Color::Dark) => '*',
-                });
-            }
-        }
-        res
-    }
+    ///// Converts the canvas into a human-readable string.
+    //#[cfg(test)]
+    //fn to_debug_str(&self) -> String {
+    //    let width = V::WIDTH;
+    //    let mut res = String::with_capacity((width * (width + 1)) as usize);
+    //    for y in 0..width {
+    //        res.push('\n');
+    //        for x in 0..width {
+    //            res.push(match self.get(x, y) {
+    //                Module::Empty => '?',
+    //                Module::Masked(Color::Light) => '.',
+    //                Module::Masked(Color::Dark) => '#',
+    //                Module::Unmasked(Color::Light) => '-',
+    //                Module::Unmasked(Color::Dark) => '*',
+    //            });
+    //        }
+    //    }
+    //    res
+    //}
 
     fn coords_to_index(&self, x: i16, y: i16) -> usize {
-        let x = if x < 0 { x + self.width } else { x }.as_usize();
-        let y = if y < 0 { y + self.width } else { y }.as_usize();
-        y * self.width.as_usize() + x
+        let x = if x < 0 { x + V::WIDTH } else { x }.as_usize();
+        let y = if y < 0 { y + V::WIDTH } else { y }.as_usize();
+        y * V::WIDTH.as_usize() + x
     }
 
     /// Obtains a module at the given coordinates. For convenience, negative
@@ -142,6 +142,7 @@ impl Canvas {
     }
 }
 
+/*
 #[cfg(test)]
 mod basic_canvas_tests {
     use crate::canvas::{Canvas, Module};
@@ -206,12 +207,13 @@ mod basic_canvas_tests {
         );
     }
 }
+*/
 
 //}}}
 //------------------------------------------------------------------------------
 //{{{ Finder patterns
 
-impl Canvas {
+impl<V: QrSpec> Canvas<V> {
     /// Draws a single finder pattern with the center at (x, y).
     fn draw_finder_pattern_at(&mut self, x: i16, y: i16) {
         let (dx_left, dx_right) = if x >= 0 { (-3, 4) } else { (-4, 3) };
@@ -239,7 +241,7 @@ impl Canvas {
     fn draw_finder_patterns(&mut self) {
         self.draw_finder_pattern_at(3, 3);
 
-        match self.version {
+        match V::VERSION {
             Version::Micro(_) => {}
             Version::Normal(_) => {
                 self.draw_finder_pattern_at(-4, 3);
@@ -249,6 +251,7 @@ impl Canvas {
     }
 }
 
+/*
 #[cfg(test)]
 mod finder_pattern_tests {
     use crate::canvas::Canvas;
@@ -306,12 +309,13 @@ mod finder_pattern_tests {
         );
     }
 }
+*/
 
 //}}}
 //------------------------------------------------------------------------------
 //{{{ Alignment patterns
 
-impl Canvas {
+impl<V: QrSpec> Canvas<V> {
     /// Draws a alignment pattern with the center at (x, y).
     fn draw_alignment_pattern_at(&mut self, x: i16, y: i16) {
         if self.get(x, y) != Module::Empty {
@@ -336,7 +340,7 @@ impl Canvas {
     /// The alignment patterns are 5×5 square patterns inside the QR code symbol
     /// to help the scanner create the square grid.
     fn draw_alignment_patterns(&mut self) {
-        match self.version {
+        match V::VERSION {
             Version::Micro(_) | Version::Normal(1) => {}
             Version::Normal(2..=6) => self.draw_alignment_pattern_at(-7, -7),
             Version::Normal(a) => {
@@ -351,6 +355,7 @@ impl Canvas {
     }
 }
 
+/*
 #[cfg(test)]
 mod alignment_pattern_tests {
     use crate::canvas::Canvas;
@@ -484,6 +489,7 @@ mod alignment_pattern_tests {
         );
     }
 }
+*/
 
 /// `ALIGNMENT_PATTERN_POSITIONS` describes the x- and y-coordinates of the
 /// center of the alignment patterns. Since the QR code is symmetric, only one
@@ -524,12 +530,11 @@ static ALIGNMENT_PATTERN_POSITIONS: [&'static [i16]; 34] = [
     &[6, 26, 54, 82, 110, 138, 166],
     &[6, 30, 58, 86, 114, 142, 170],
 ];
-
 //}}}
 //------------------------------------------------------------------------------
 //{{{ Timing patterns
 
-impl Canvas {
+impl<V: QrSpec> Canvas<V> {
     /// Draws a line from (x1, y1) to (x2, y2), inclusively.
     ///
     /// The line must be either horizontal or vertical, i.e.
@@ -558,12 +563,12 @@ impl Canvas {
 
     /// Draws the timing patterns.
     ///
-    /// The timing patterns are checkboard-colored lines near the edge of the QR
+    /// The timing patterns are checkerboard-colored lines near the edge of the QR
     /// code symbol, to establish the fine-grained module coordinates when
     /// scanning.
     fn draw_timing_patterns(&mut self) {
-        let width = self.width;
-        let (y, x1, x2) = match self.version {
+        let width = V::WIDTH;
+        let (y, x1, x2) = match V::VERSION {
             Version::Micro(_) => (0, 8, width - 1),
             Version::Normal(_) => (6, 8, width - 9),
         };
@@ -572,6 +577,7 @@ impl Canvas {
     }
 }
 
+/*
 #[cfg(test)]
 mod timing_pattern_tests {
     use crate::canvas::Canvas;
@@ -629,12 +635,13 @@ mod timing_pattern_tests {
         );
     }
 }
+*/
 
 //}}}
 //------------------------------------------------------------------------------
 //{{{ Format info & Version info
 
-impl Canvas {
+impl<V: QrSpec> Canvas<V> {
     /// Draws a big-endian integer onto the canvas with the given coordinates.
     ///
     /// The 1 bits will be plotted with `on_color` and the 0 bits with
@@ -653,7 +660,7 @@ impl Canvas {
     /// Draws the format info patterns for an encoded number.
     fn draw_format_info_patterns_with_number(&mut self, format_info: u16) {
         let format_info = u32::from(format_info);
-        match self.version {
+        match V::VERSION {
             Version::Micro(_) => {
                 self.draw_number(format_info, 15, Color::Dark, Color::Light, &FORMAT_INFO_COORDS_MICRO_QR);
             }
@@ -672,7 +679,7 @@ impl Canvas {
 
     /// Draws the version information patterns.
     fn draw_version_info_patterns(&mut self) {
-        match self.version {
+        match V::VERSION {
             Version::Micro(_) | Version::Normal(1..=6) => {
                 return;
             }
@@ -685,6 +692,7 @@ impl Canvas {
     }
 }
 
+/*
 #[cfg(test)]
 mod draw_version_info_tests {
     use crate::canvas::Canvas;
@@ -850,6 +858,7 @@ mod draw_version_info_tests {
         );
     }
 }
+*/
 
 static VERSION_INFO_COORDS_BL: [(i16, i16); 18] = [
     (5, -9),
@@ -957,7 +966,7 @@ static VERSION_INFOS: [u32; 34] = [
 //------------------------------------------------------------------------------
 //{{{ All functional patterns before data placement
 
-impl Canvas {
+impl<V: QrSpec> Canvas<V> {
     /// Draw all functional patterns, before data placement.
     ///
     /// All functional patterns (e.g. the finder pattern) *except* the format
@@ -1013,6 +1022,7 @@ pub fn is_functional(version: Version, width: i16, x: i16, y: i16) -> bool {
     }
 }
 
+/*
 #[cfg(test)]
 mod all_functional_patterns_tests {
     use crate::canvas::{is_functional, Canvas};
@@ -1123,6 +1133,7 @@ mod all_functional_patterns_tests {
         assert!(!is_functional(version, version.width(), 1, 9));
     }
 }
+*/
 
 //}}}
 //------------------------------------------------------------------------------
@@ -1183,6 +1194,7 @@ impl Iterator for DataModuleIter {
     }
 }
 
+/*
 #[cfg(test)]
 #[cfg_attr(rustfmt, rustfmt_skip)] // skip to prevent file becoming too long.
 mod data_iter_tests {
@@ -1348,12 +1360,13 @@ mod data_iter_tests {
         ]);
     }
 }
+*/
 
 //}}}
 //------------------------------------------------------------------------------
 //{{{ Data placement
 
-impl Canvas {
+impl<V: QrSpec> Canvas<V> {
     fn draw_codewords<I>(&mut self, codewords: &[u8], is_half_codeword_at_end: bool, coords: &mut I)
     where
         I: Iterator<Item = (i16, i16)>,
@@ -1378,17 +1391,18 @@ impl Canvas {
 
     /// Draws the encoded data and error correction codes to the empty modules.
     pub fn draw_data(&mut self, data: &[u8], ec: &[u8]) {
-        let is_half_codeword_at_end = match (self.version, self.ec_level) {
+        let is_half_codeword_at_end = match (V::VERSION, V::EC_LEVEL) {
             (Version::Micro(1), EcLevel::L) | (Version::Micro(3), EcLevel::M) => true,
             _ => false,
         };
 
-        let mut coords = DataModuleIter::new(self.version);
+        let mut coords = DataModuleIter::new(V::VERSION);
         self.draw_codewords(data, is_half_codeword_at_end, &mut coords);
         self.draw_codewords(ec, false, &mut coords);
     }
 }
 
+/*
 #[cfg(test)]
 mod draw_codewords_test {
     use crate::canvas::Canvas;
@@ -1455,7 +1469,8 @@ mod draw_codewords_test {
              #######..*---*--*----*--*"
         );
     }
-}
+}*/
+
 //}}}
 //------------------------------------------------------------------------------
 //{{{ Masking
@@ -1529,13 +1544,13 @@ fn get_mask_function(pattern: MaskPattern) -> fn(i16, i16) -> bool {
     }
 }
 
-impl Canvas {
+impl<V: QrSpec> Canvas<V> {
     /// Applies a mask to the canvas. This method will also draw the format info
     /// patterns.
     pub fn apply_mask(&mut self, pattern: MaskPattern) {
         let mask_fn = get_mask_function(pattern);
-        for x in 0..self.width {
-            for y in 0..self.width {
+        for x in 0..V::WIDTH {
+            for y in 0..V::WIDTH {
                 let module = self.get_mut(x, y);
                 *module = module.mask(mask_fn(x, y));
             }
@@ -1550,9 +1565,9 @@ impl Canvas {
     /// If the error correction level or mask pattern is not supported in the
     /// current QR code version, this method will fail.
     fn draw_format_info_patterns(&mut self, pattern: MaskPattern) {
-        let format_number = match self.version {
+        let format_number = match V::VERSION {
             Version::Normal(_) => {
-                let simple_format_number = ((self.ec_level as usize) ^ 1) << 3 | (pattern as usize);
+                let simple_format_number = ((V::EC_LEVEL as usize) ^ 1) << 3 | (pattern as usize);
                 FORMAT_INFOS_QR[simple_format_number]
             }
             Version::Micro(a) => {
@@ -1563,7 +1578,7 @@ impl Canvas {
                     MaskPattern::Meadow => 0b11,
                     _ => panic!("Unsupported mask pattern in Micro QR code"),
                 };
-                let symbol_number = match (a, self.ec_level) {
+                let symbol_number = match (a, V::EC_LEVEL) {
                     (1, EcLevel::L) => 0b000,
                     (2, EcLevel::L) => 0b001,
                     (2, EcLevel::M) => 0b010,
@@ -1582,6 +1597,7 @@ impl Canvas {
     }
 }
 
+/*
 #[cfg(test)]
 mod mask_tests {
     use crate::canvas::{Canvas, MaskPattern};
@@ -1674,6 +1690,7 @@ mod mask_tests {
         );
     }
 }
+*/
 
 static FORMAT_INFOS_QR: [u16; 32] = [
     0x5412, 0x5125, 0x5e7c, 0x5b4b, 0x45f9, 0x40ce, 0x4f97, 0x4aa0, 0x77c4, 0x72f3, 0x7daa, 0x789d, 0x662f, 0x6318,
@@ -1691,7 +1708,7 @@ static FORMAT_INFOS_MICRO_QR: [u16; 32] = [
 //------------------------------------------------------------------------------
 //{{{ Penalty score
 
-impl Canvas {
+impl<V: QrSpec> Canvas<V> {
     /// Compute the penalty score for having too many adjacent modules with the
     /// same color.
     ///
@@ -1700,10 +1717,10 @@ impl Canvas {
     fn compute_adjacent_penalty_score(&self, is_horizontal: bool) -> u16 {
         let mut total_score = 0;
 
-        for i in 0..self.width {
+        for i in 0..V::WIDTH {
             let map_fn = |j| if is_horizontal { self.get(j, i) } else { self.get(i, j) };
 
-            let colors = (0..self.width).map(map_fn).chain(Some(Module::Empty).into_iter());
+            let colors = (0..V::WIDTH).map(map_fn).chain(Some(Module::Empty).into_iter());
             let mut last_color = Module::Empty;
             let mut consecutive_len = 1_u16;
 
@@ -1731,8 +1748,8 @@ impl Canvas {
     fn compute_block_penalty_score(&self) -> u16 {
         let mut total_score = 0;
 
-        for i in 0..self.width - 1 {
-            for j in 0..self.width - 1 {
+        for i in 0..V::WIDTH - 1 {
+            for j in 0..V::WIDTH - 1 {
                 let this = self.get(i, j);
                 let right = self.get(i + 1, j);
                 let bottom = self.get(i, j + 1);
@@ -1757,20 +1774,17 @@ impl Canvas {
 
         let mut total_score = 0;
 
-        for i in 0..self.width {
-            for j in 0..self.width - 6 {
-                // TODO a ref to a closure should be enough?
-                let get: Box<dyn Fn(i16) -> Color> = if is_horizontal {
-                    Box::new(|k| self.get(k, i).into())
-                } else {
-                    Box::new(|k| self.get(i, k).into())
-                };
+        for i in 0..V::WIDTH {
+            for j in 0..V::WIDTH - 6 {
+                let get_h = |k| self.get(k, i).into();
+                let get_v = |k| self.get(i, k).into();
+                let get: &dyn Fn(i16) -> Color = if is_horizontal { &get_h } else { &get_v };
 
                 if (j..(j + 7)).map(&*get).ne(PATTERN.iter().cloned()) {
                     continue;
                 }
 
-                let check = |k| 0 <= k && k < self.width && get(k) != Color::Light;
+                let check = |k| 0 <= k && k < V::WIDTH && get(k) != Color::Light;
                 if !((j - 4)..j).any(&check) || !((j + 7)..(j + 11)).any(&check) {
                     total_score += 40;
                 }
@@ -1803,8 +1817,8 @@ impl Canvas {
     /// has the inverse meaning of this method, but it is very easy to convert
     /// between the two (this score is (16×width − standard-score)).
     fn compute_light_side_penalty_score(&self) -> u16 {
-        let h = (1..self.width).filter(|j| !self.get(*j, -1).is_dark()).count();
-        let v = (1..self.width).filter(|j| !self.get(-1, *j).is_dark()).count();
+        let h = (1..V::WIDTH).filter(|j| !self.get(*j, -1).is_dark()).count();
+        let v = (1..V::WIDTH).filter(|j| !self.get(-1, *j).is_dark()).count();
 
         (h + v + 15 * max(h, v)).as_u16()
     }
@@ -1812,7 +1826,7 @@ impl Canvas {
     /// Compute the total penalty scores. A QR code having higher points is less
     /// desirable.
     fn compute_total_penalty_scores(&self) -> u16 {
-        match self.version {
+        match V::VERSION {
             Version::Normal(_) => {
                 let s1_a = self.compute_adjacent_penalty_score(true);
                 let s1_b = self.compute_adjacent_penalty_score(false);
@@ -1827,6 +1841,7 @@ impl Canvas {
     }
 }
 
+/*
 #[cfg(test)]
 mod penalty_tests {
     use crate::canvas::{Canvas, MaskPattern};
@@ -1949,6 +1964,7 @@ mod penalty_tests {
         assert_eq!(c.compute_light_side_penalty_score(), 168);
     }
 }
+*/
 
 //}}}
 //------------------------------------------------------------------------------
@@ -1968,16 +1984,16 @@ static ALL_PATTERNS_QR: [MaskPattern; 8] = [
 static ALL_PATTERNS_MICRO_QR: [MaskPattern; 4] =
     [MaskPattern::HorizontalLines, MaskPattern::LargeCheckerboard, MaskPattern::Diamonds, MaskPattern::Meadow];
 
-impl Canvas {
+impl<V: QrSpec> Canvas<V> {
     /// Construct a new canvas and apply the best masking that gives the lowest
     /// penalty score.
-    pub fn apply_best_mask(&self) -> Self {
-        match self.version {
+    pub fn apply_best_mask(&self) -> Canvas<V> {
+        match V::VERSION {
             Version::Normal(_) => ALL_PATTERNS_QR.iter(),
             Version::Micro(_) => ALL_PATTERNS_MICRO_QR.iter(),
         }
         .map(|ptn| {
-            let mut c = self.clone();
+            let mut c: Canvas<V> = Canvas::clone(self);
             c.apply_mask(*ptn);
             c
         })
@@ -1985,15 +2001,9 @@ impl Canvas {
         .expect("at least one pattern")
     }
 
-    /// Convert the modules into a vector of booleans.
-    #[deprecated(since = "0.4.0", note = "use `into_colors()` instead")]
-    pub fn to_bools(&self) -> Vec<bool> {
-        self.modules.iter().map(|m| m.is_dark()).collect()
-    }
-
     /// Convert the modules into a vector of colors.
-    pub fn into_colors(self) -> Vec<Color> {
-        self.modules.into_iter().map(Color::from).collect()
+    pub fn into_colors(self) -> impl Iterator<Item = Color> {
+        self.modules.into_iter().map(Color::from)
     }
 }
 

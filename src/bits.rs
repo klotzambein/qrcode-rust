@@ -19,13 +19,12 @@ use heapless::Vec;
 pub struct Bits<V: QrSpec> {
     data: Vec<u8, V::BitsSize>,
     bit_offset: usize,
-    version: Version,
 }
 
 impl<V: QrSpec> Bits<V> {
     /// Constructs a new, empty bits structure.
-    pub fn new(version: Version) -> Self {
-        Self { data: Vec::new(), bit_offset: 0, version }
+    pub fn new() -> Self {
+        Self { data: Vec::new(), bit_offset: 0 }
     }
 
     /// Pushes an N-bit big-endian integer to the end of the bits.
@@ -97,12 +96,12 @@ impl<V: QrSpec> Bits<V> {
     /// The maximum number of bits allowed by the provided QR code version and
     /// error correction level.
     pub fn max_len(&self, ec_level: EcLevel) -> QrResult<usize> {
-        self.version.fetch(ec_level, &DATA_LENGTHS)
+        V::VERSION.fetch(ec_level, &DATA_LENGTHS)
     }
 
     /// Version of the QR code.
     pub fn version(&self) -> Version {
-        self.version
+        V::VERSION
     }
 }
 
@@ -182,7 +181,7 @@ impl<V: QrSpec> Bits<V> {
     /// returns `Err(QrError::UnsupportedCharacterSet)`.
     pub fn push_mode_indicator(&mut self, mode: ExtendedMode) -> QrResult<()> {
         #[cfg_attr(feature = "cargo-clippy", allow(match_same_arms))]
-        let number = match (self.version, mode) {
+        let number = match (V::VERSION, mode) {
             (Version::Micro(1), ExtendedMode::Data(Mode::Numeric)) => return Ok(()),
             (Version::Micro(_), ExtendedMode::Data(Mode::Numeric)) => 0,
             (Version::Micro(_), ExtendedMode::Data(Mode::Alphanumeric)) => 1,
@@ -198,7 +197,7 @@ impl<V: QrSpec> Bits<V> {
             (_, ExtendedMode::Fnc1Second) => 0b1001,
             (_, ExtendedMode::StructuredAppend) => 0b0011,
         };
-        let bits = self.version.mode_bits_count();
+        let bits = V::VERSION.mode_bits_count();
         self.push_number_checked(bits, number).or(Err(QrError::UnsupportedCharacterSet))
     }
 }
@@ -218,8 +217,9 @@ impl<V: QrSpec> Bits<V> {
     ///
     ///     use qrcode::bits::Bits;
     ///     use qrcode::types::Version;
+    ///     use qrcode::spec::{Version1, EcLevelM};
     ///
-    ///     let mut bits = Bits::new(Version::Normal(1));
+    ///     let mut bits = Bits::<Version1<EcLevelM>>::new();
     ///     bits.push_eci_designator(9); // 9 = ISO-8859-7 (Greek).
     ///     bits.push_byte_data(b"\xa1\xa2\xa3\xa4\xa5"); // ΑΒΓΔΕ
     ///
@@ -311,7 +311,7 @@ mod eci_tests {
 
 impl<V: QrSpec> Bits<V> {
     fn push_header(&mut self, mode: Mode, raw_data_len: usize) -> QrResult<()> {
-        let length_bits = mode.length_bits_count(self.version);
+        let length_bits = mode.length_bits_count(V::VERSION);
         self.push_mode_indicator(ExtendedMode::Data(mode))?;
         self.push_number_checked(length_bits, raw_data_len)?;
         Ok(())
@@ -581,9 +581,9 @@ impl<V: QrSpec> Bits<V> {
     ///     #![allow(unused_must_use)]
     ///
     ///     use qrcode::bits::Bits;
-    ///     use qrcode::types::Version;
-    ///
-    ///     let mut bits = Bits::new(Version::Normal(1));
+    ///     use qrcode::spec::{Version1, EcLevelL};
+    /// 
+    ///     let mut bits = Bits::<Version1<EcLevelL>>::new();
     ///     bits.push_fnc1_first_position();
     ///     bits.push_numeric_data(b"01049123451234591597033130128");
     ///     bits.push_alphanumeric_data(b"%10ABC123");
@@ -600,9 +600,9 @@ impl<V: QrSpec> Bits<V> {
     ///     #![allow(unused_must_use)]
     ///
     ///     use qrcode::bits::Bits;
-    ///     use qrcode::types::Version;
+    ///     use qrcode::spec::{Version1, EcLevelL};
     ///
-    ///     let mut bits = Bits::new(Version::Normal(1));
+    ///     let mut bits = Bits::<Version1<EcLevelL>>::new();
     ///     bits.push_fnc1_second_position(37);
     ///     bits.push_alphanumeric_data(b"AA1234BBB112");
     ///     bits.push_byte_data(b"text text text text\r");
@@ -677,7 +677,7 @@ static DATA_LENGTHS: [[usize; 4]; 44] = [
 impl<V: QrSpec> Bits<V> {
     /// Pushes the ending bits to indicate no more data.
     pub fn push_terminator(&mut self, ec_level: EcLevel) -> QrResult<()> {
-        let terminator_size = match self.version {
+        let terminator_size = match V::VERSION {
             Version::Micro(a) => a.as_usize() * 2 + 1,
             _ => 4,
         };
@@ -796,7 +796,7 @@ impl<V: QrSpec> Bits<V> {
 
     /// Pushes the data the bits, using the optimal encoding.
     pub fn push_optimal_data(&mut self, data: &[u8]) -> QrResult<()> {
-        let segments = Parser::new(data).optimize(self.version);
+        let segments = Parser::new(data).optimize(V::VERSION);
         self.push_segments(data, segments)
     }
 }

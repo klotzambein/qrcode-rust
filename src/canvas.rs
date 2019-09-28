@@ -23,9 +23,6 @@ use heapless::Vec;
 /// The color of a module (pixel) in the QR code.
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum Module {
-    /// The module is empty.
-    Empty,
-
     /// The module is of functional patterns which cannot be masked, or pixels
     /// which have been masked.
     Masked(Color),
@@ -37,13 +34,14 @@ pub enum Module {
 impl From<Module> for Color {
     fn from(module: Module) -> Self {
         match module {
-            Module::Empty => Color::Light,
             Module::Masked(c) | Module::Unmasked(c) => c,
         }
     }
 }
 
 impl Module {
+    const EMPTY: Module = Module::Unmasked(Color::Light);
+
     /// Checks whether a module is dark.
     pub fn is_dark(self) -> bool {
         Color::from(self) == Color::Dark
@@ -62,8 +60,6 @@ impl Module {
     ///
     pub fn mask(self, should_invert: bool) -> Color {
         match (self, should_invert) {
-            (Module::Empty, true) => Color::Dark,
-            (Module::Empty, false) => Color::Light,
             (Module::Unmasked(c), true) => !c,
             (Module::Unmasked(c), false) | (Module::Masked(c), _) => c,
         }
@@ -92,7 +88,7 @@ impl<V: QrSpec> Canvas<V> {
     /// Constructs a new canvas big enough for a QR code of the given version.
     pub fn new() -> Self {
         let mut modules = Vec::new();
-        modules.resize((V::WIDTH * V::WIDTH).as_usize(), Module::Empty).unwrap();
+        modules.resize((V::WIDTH * V::WIDTH).as_usize(), Module::EMPTY).unwrap();
         Self { modules }
     }
 
@@ -319,7 +315,7 @@ mod finder_pattern_tests {
 impl<V: QrSpec> Canvas<V> {
     /// Draws a alignment pattern with the center at (x, y).
     fn draw_alignment_pattern_at(&mut self, x: i16, y: i16) {
-        if self.get(x, y) != Module::Empty {
+        if let Module::Masked(_) = self.get(x, y) {
             return;
         }
         for j in -2..=2 {
@@ -1380,7 +1376,7 @@ impl<V: QrSpec> Canvas<V> {
                 let color = if (*b & (1 << j)) == 0 { Color::Light } else { Color::Dark };
                 while let Some((x, y)) = coords.next() {
                     let r = self.get(x, y);
-                    if r == Module::Empty {
+                    if let Module::Unmasked(_) = r {
                         self.put_unmasked(x, y, color);
                         continue 'outside;
                     }
@@ -1721,8 +1717,8 @@ impl<V: QrSpec> Canvas<V> {
         for i in 0..V::WIDTH {
             let map_fn = |j| if is_horizontal { self.get(j, i) } else { self.get(i, j) };
 
-            let colors = (0..V::WIDTH).map(map_fn).chain(Some(Module::Empty).into_iter());
-            let mut last_color = Module::Empty;
+            let colors = (0..V::WIDTH).map(map_fn).chain(Some(Module::EMPTY).into_iter());
+            let mut last_color = Module::EMPTY;
             let mut consecutive_len = 1_u16;
 
             for color in colors {

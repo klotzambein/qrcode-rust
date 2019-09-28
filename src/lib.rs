@@ -67,7 +67,7 @@ impl<V: QrSpec> QrCode<V> {
     ///     let micro_code = QrCode::with_version(b"123", Version::Micro(1), EcLevel::L).unwrap();
     ///
     pub fn new<D: AsRef<[u8]>>(data: D) -> QrResult<Self> {
-        let mut bits = bits::Bits::new(V::VERSION);
+        let mut bits = bits::Bits::new();
         bits.push_optimal_data(data.as_ref())?;
         bits.push_terminator(V::EC_LEVEL)?;
         Self::with_bits(bits)

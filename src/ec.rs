@@ -1,7 +1,7 @@
 //! The `ec` module applies the Reed-Solomon error correction codes.
 
-use crate::types::{EcLevel, QrResult};
 use crate::spec::QrSpec;
+use crate::types::{EcLevel, QrResult};
 
 use heapless::ArrayLength;
 use heapless::Vec;
@@ -68,7 +68,6 @@ mod ec_tests {
 //}}}
 //------------------------------------------------------------------------------
 //{{{ Interleave support
-
 
 #[inline]
 fn interleave_append<N: ArrayLength<u8>>(
@@ -178,8 +177,8 @@ mod construct_codewords_test {
 /// Computes the maximum allowed number of erratic modules can be introduced to
 /// the QR code, before the data becomes truly corrupted.
 pub fn max_allowed_errors<V: QrSpec>() -> QrResult<usize> {
-    use EcLevel::{L, M};
     use crate::types::Version::{Micro, Normal};
+    use EcLevel::{L, M};
 
     let p = match (V::VERSION, V::EC_LEVEL) {
         (Micro(2), L) | (Normal(1), L) => 3,

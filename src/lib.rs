@@ -1,4 +1,3 @@
-
 //! QRCode encoder
 //!
 //! This crate provides a QR code and Micro QR code encoder for binary data.
@@ -38,11 +37,11 @@ pub mod canvas;
 mod cast;
 pub mod ec;
 pub mod optimize;
-pub mod types;
 pub mod spec;
+pub mod types;
 
-pub use types::{Color, EcLevel, QrResult, Version};
 use spec::QrSpec;
+pub use types::{Color, EcLevel, QrResult, Version};
 
 use checked_int_cast::CheckedIntCast;
 use heapless::Vec;
@@ -50,7 +49,7 @@ use heapless::Vec;
 /// The encoded QR code symbol.
 #[derive(Clone)]
 pub struct QrCode<V: QrSpec> {
-    content: Vec<Color, V::ColorSize>
+    content: Vec<Color, V::ColorSize>,
 }
 
 impl<V: QrSpec> QrCode<V> {
@@ -67,7 +66,7 @@ impl<V: QrSpec> QrCode<V> {
     ///
     ///     let micro_code = QrCode::with_version(b"123", Version::Micro(1), EcLevel::L).unwrap();
     ///
-    pub fn with_version<D: AsRef<[u8]>>(data: D) -> QrResult<Self> {
+    pub fn new<D: AsRef<[u8]>>(data: D) -> QrResult<Self> {
         let mut bits = bits::Bits::new(V::VERSION);
         bits.push_optimal_data(data.as_ref())?;
         bits.push_terminator(V::EC_LEVEL)?;
@@ -211,8 +210,8 @@ mod tests {
 
 #[cfg(all(test, feature = "image"))]
 mod image_tests {
-    use image::{load_from_memory, Luma, Rgb};
     use crate::{EcLevel, QrCode, Version};
+    use image::{load_from_memory, Luma, Rgb};
 
     #[test]
     fn test_annex_i_qr_as_image() {

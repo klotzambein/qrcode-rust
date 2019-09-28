@@ -7,8 +7,8 @@ use test::{black_box, Bencher};
 
 use crate::cast::{As, Truncate};
 use crate::optimize::{Parser, Segment};
-use crate::types::{EcLevel, Mode, QrError, QrResult, Version};
 use crate::spec::QrSpec;
+use crate::types::{EcLevel, Mode, QrError, QrResult, Version};
 
 use heapless::Vec;
 

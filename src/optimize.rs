@@ -1,6 +1,6 @@
 //! Find the optimal data mode sequence to encode a piece of data.
-use core::slice::Iter;
 use crate::types::{Mode, Version};
+use core::slice::Iter;
 
 #[cfg(feature = "bench")]
 use test::Bencher;

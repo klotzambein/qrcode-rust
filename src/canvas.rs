@@ -60,12 +60,12 @@ impl Module {
     ///     assert_eq!(Module::Masked(Color::Dark).mask(true), Module::Masked(Color::Dark));
     ///     assert_eq!(Module::Masked(Color::Dark).mask(false), Module::Masked(Color::Dark));
     ///
-    pub fn mask(self, should_invert: bool) -> Self {
+    pub fn mask(self, should_invert: bool) -> Color {
         match (self, should_invert) {
-            (Module::Empty, true) => Module::Masked(Color::Dark),
-            (Module::Empty, false) => Module::Masked(Color::Light),
-            (Module::Unmasked(c), true) => Module::Masked(!c),
-            (Module::Unmasked(c), false) | (Module::Masked(c), _) => Module::Masked(c),
+            (Module::Empty, true) => Color::Dark,
+            (Module::Empty, false) => Color::Light,
+            (Module::Unmasked(c), true) => !c,
+            (Module::Unmasked(c), false) | (Module::Masked(c), _) => c,
         }
     }
 }
@@ -128,17 +128,18 @@ impl<V: QrSpec> Canvas<V> {
         self.modules[self.coords_to_index(x, y)]
     }
 
-    /// Obtains a mutable module at the given coordinates. For convenience,
-    /// negative coordinates will wrap around.
-    pub fn get_mut(&mut self, x: i16, y: i16) -> &mut Module {
+    /// Sets the color of a functional module at the given coordinates. For
+    /// convenience, negative coordinates will wrap around.
+    pub fn put(&mut self, x: i16, y: i16, color: Color) {
         let index = self.coords_to_index(x, y);
-        &mut self.modules[index]
+        self.modules[index] = Module::Masked(color);
     }
 
     /// Sets the color of a functional module at the given coordinates. For
     /// convenience, negative coordinates will wrap around.
-    pub fn put(&mut self, x: i16, y: i16, color: Color) {
-        *self.get_mut(x, y) = Module::Masked(color);
+    pub fn put_unmasked(&mut self, x: i16, y: i16, color: Color) {
+        let index = self.coords_to_index(x, y);
+        self.modules[index] = Module::Unmasked(color);
     }
 }
 
@@ -1378,9 +1379,9 @@ impl<V: QrSpec> Canvas<V> {
             'outside: for j in (bits_end..=7).rev() {
                 let color = if (*b & (1 << j)) == 0 { Color::Light } else { Color::Dark };
                 while let Some((x, y)) = coords.next() {
-                    let r = self.get_mut(x, y);
-                    if *r == Module::Empty {
-                        *r = Module::Unmasked(color);
+                    let r = self.get(x, y);
+                    if r == Module::Empty {
+                        self.put_unmasked(x, y, color);
                         continue 'outside;
                     }
                 }
@@ -1551,8 +1552,8 @@ impl<V: QrSpec> Canvas<V> {
         let mask_fn = get_mask_function(pattern);
         for x in 0..V::WIDTH {
             for y in 0..V::WIDTH {
-                let module = self.get_mut(x, y);
-                *module = module.mask(mask_fn(x, y));
+                let module = self.get(x, y);
+                self.put(x, y, module.mask(mask_fn(x, y)));
             }
         }
 

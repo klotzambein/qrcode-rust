@@ -122,11 +122,11 @@ impl<V: QrSpec> QrCode<V> {
         canvas::is_functional(V::VERSION, V::WIDTH, x, y)
     }
 
-    ///// Converts the QR code into a human-readable string. This is mainly for
-    ///// debugging only.
-    //pub fn to_debug_str(&self, on_char: char, off_char: char) -> String {
-    //    self.render().quiet_zone(false).dark_color(on_char).light_color(off_char).build()
-    //}
+    // /// Converts the QR code into a human-readable string. This is mainly for
+    // /// debugging only.
+    // pub fn to_debug_str(&self, on_char: char, off_char: char) -> String {
+    //     self.render().quiet_zone(false).dark_color(on_char).light_color(off_char).build()
+    // }
 
     /// Converts the QR code to a vector of colors.
     pub fn to_colors(&self) -> impl Iterator<Item = Color> + '_ {

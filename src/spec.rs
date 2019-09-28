@@ -1,11 +1,11 @@
 //! This module contains all definitions of QRCode versions and error correction
 //! levels. MicroQR is currently not included.
-//! 
+//!
 //! # Generation code
 //! This code is used to generate the macro code below.
 //! ```ignore
 //! use std::fmt::{Display, Formatter, Result as FmtResult};
-//! 
+//!
 //! /// `EC_BYTES_PER_BLOCK` provides the number of codewords (bytes) used for error
 //! /// correction per block in each version.
 //! ///
@@ -59,7 +59,7 @@
 //!     [6, 8, 0, 0],   // M3
 //!     [8, 10, 14, 0], // M4
 //! ];
-//! 
+//!
 //! /// `DATA_BYTES_PER_BLOCK` provides the number of codewords (bytes) used for
 //! /// real data per block in each version.
 //! ///
@@ -287,7 +287,7 @@
 //!     [(11, 1, 0, 0), (9, 1, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0)], // M3
 //!     [(16, 1, 0, 0), (14, 1, 0, 0), (10, 1, 0, 0), (0, 0, 0, 0)], // M4
 //! ];
-//! 
+//!
 //! fn main() {
 //!     println!("// --------------------------------------------------------");
 //!     println!("// -- Generated -- Generated --  Generated --  Generated --");
@@ -308,14 +308,14 @@
 //!         for l in 0..4 {
 //!             let ec_per_block = EC_BYTES_PER_BLOCK[i][l];
 //!             let (s1, c1, s2, c2) = DATA_BYTES_PER_BLOCK[i][l];
-//!             
+//!
 //!             // Check that we always end up having the same total size.
 //!             assert_eq!(total_size, ec_per_block * (c1 + c2) + s1 * c1 + s2 * c2);
-//!             
+//!
 //!             let ec_gen_buffer_size = s1.max(s2) + ec_per_block;
 //!             let ec_blocks_size = ec_per_block * (c1 + c2);
 //!             let bits_size = s1 * c1 + s2 * c2;
-//! 
+//!
 //!             println!(
 //!                 "    {{ {}, {}, {}, {}, {}, {}, {}, {} }},",
 //!                 TypeNum(ec_gen_buffer_size),
@@ -332,9 +332,9 @@
 //!     }
 //!     println!("}}");
 //! }
-//! 
+//!
 //! pub struct TypeNum(usize);
-//! 
+//!
 //! impl Display for TypeNum {
 //!     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 //!         let TypeNum(x) = *self;
@@ -369,8 +369,8 @@ use crate::canvas::Module;
 use crate::types::{Color, EcLevel, Version};
 use core::marker::PhantomData;
 use heapless::consts::*;
-use typenum::{UInt, UTerm, B1, B0};
 use heapless::ArrayLength;
+use typenum::{UInt, UTerm, B0, B1};
 
 pub trait QrSpec {
     /// EC_BYTES_PER_BLOCK * (BLOCK_1_COUNT + BLOCK_2_COUNT) + BLOCK_1_COUNT *

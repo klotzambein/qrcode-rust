@@ -28,7 +28,7 @@
 //! }
 //! ```
 
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 
 use core::ops::Index;
 
@@ -49,7 +49,7 @@ use heapless::Vec;
 /// The encoded QR code symbol.
 #[derive(Clone)]
 pub struct QrCode<V: QrSpec> {
-    content: Vec<Color, V::ColorSize>,
+    content: Vec<u8, V::ColorSize>,
 }
 
 impl<V: QrSpec> QrCode<V> {
@@ -57,15 +57,11 @@ impl<V: QrSpec> QrCode<V> {
     /// level.
     ///
     ///     use qrcode::{QrCode, Version, EcLevel};
+    ///     use qrcode::spec::{Version1, EcLevelL};
     ///
-    ///     let code = QrCode::with_version(b"Some data", Version::Normal(5), EcLevel::M).unwrap();
+    ///     let code = QrCode::<Version1<EcLevelL>>::new(b"Some data");
     ///
     /// This method can also be used to generate Micro QR code.
-    ///
-    ///     use qrcode::{QrCode, Version, EcLevel};
-    ///
-    ///     let micro_code = QrCode::with_version(b"123", Version::Micro(1), EcLevel::L).unwrap();
-    ///
     pub fn new<D: AsRef<[u8]>>(data: D) -> QrResult<Self> {
         let mut bits = bits::Bits::new();
         bits.push_optimal_data(data.as_ref())?;
@@ -88,12 +84,13 @@ impl<V: QrSpec> QrCode<V> {
     ///
     ///     use qrcode::{QrCode, Version, EcLevel};
     ///     use qrcode::bits::Bits;
+    ///     use qrcode::spec::{Version1, EcLevelL};
     ///
-    ///     let mut bits = Bits::new(Version::Normal(1));
+    ///     let mut bits = Bits::<Version1<EcLevelL>>::new();
     ///     bits.push_eci_designator(9);
     ///     bits.push_byte_data(b"\xca\xfe\xe4\xe9\xea\xe1\xf2 QR");
     ///     bits.push_terminator(EcLevel::L);
-    ///     let qrcode = QrCode::with_bits(bits, EcLevel::L);
+    ///     let qrcode = QrCode::with_bits(bits);
     ///
     pub fn with_bits(bits: bits::Bits<V>) -> QrResult<Self> {
         let data = bits.into_bytes();
@@ -102,8 +99,7 @@ impl<V: QrSpec> QrCode<V> {
         canvas.draw_all_functional_patterns();
         canvas.draw_data(&data_ec[..data_end], &data_ec[data_end..]);
         let canvas = canvas.apply_best_mask();
-        let mut content = Vec::new();
-        content.extend(canvas.into_colors());
+        let content = canvas.colors_bits();
         Ok(Self { content })
     }
 
@@ -128,25 +124,25 @@ impl<V: QrSpec> QrCode<V> {
     //     self.render().quiet_zone(false).dark_color(on_char).light_color(off_char).build()
     // }
 
-    /// Converts the QR code to a vector of colors.
-    pub fn to_colors(&self) -> impl Iterator<Item = Color> + '_ {
-        self.content.iter().cloned()
-    }
+    // /// Converts the QR code to a vector of colors.
+    // pub fn to_colors(&self) -> impl Iterator<Item = Color> + '_ {
+    //     self.content.iter().cloned()
+    // }
 
-    /// Converts the QR code to a vector of colors.
-    pub fn into_colors(self) -> Vec<Color, V::ColorSize> {
-        self.content
-    }
+    // /// Converts the QR code to a vector of colors.
+    // pub fn colors(self) -> Vec<Color, V::ColorSize> {
+    //     self.content
+    // }
 }
 
-impl<V: QrSpec> Index<(usize, usize)> for QrCode<V> {
-    type Output = Color;
-
-    fn index(&self, (x, y): (usize, usize)) -> &Color {
-        let index = y * V::WIDTH as usize + x;
-        &self.content[index]
-    }
-}
+// impl<V: QrSpec> Index<(usize, usize)> for QrCode<V> {
+//     type Output = Color;
+// 
+//     fn index(&self, (x, y): (usize, usize)) -> &Color {
+//         let index = y * V::WIDTH as usize + x;
+//         &self.content[index]
+//     }
+// }
 
 /*
 #[cfg(test)]

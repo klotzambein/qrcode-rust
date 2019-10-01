@@ -2,12 +2,12 @@
 //!
 //!     use qrcode::types::{Version, EcLevel};
 //!     use qrcode::canvas::{Canvas, MaskPattern};
+//!     use qrcode::spec::{Version1, EcLevelL};
 //!
-//!     let mut c = Canvas::new(Version::Normal(1), EcLevel::L);
+//!     let mut c = Canvas::<Version1<EcLevelL>>::new();
 //!     c.draw_all_functional_patterns();
 //!     c.draw_data(b"data_here", b"ec_code_here");
 //!     c.apply_mask(MaskPattern::Checkerboard);
-//!     let bools = c.to_bools();
 
 use core::cmp::max;
 
@@ -47,16 +47,61 @@ impl Module {
         Color::from(self) == Color::Dark
     }
 
+    pub fn from_bits(bits: u8) -> Module {
+        match bits & 0b11 {
+            0 => Module::Unmasked(Color::Light),
+            1 => Module::Unmasked(Color::Dark),
+            2 => Module::Masked(Color::Light),
+            3 => Module::Masked(Color::Dark),
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn from_u8(data: u8, index: u8) -> Module {
+        Module::from_bits(data >> index)
+    }
+
+    pub fn to_bits(self) -> u8 {
+        match self {
+            Module::Unmasked(Color::Light) => 0,
+            Module::Unmasked(Color::Dark) => 1,
+            Module::Masked(Color::Light) => 2,
+            Module::Masked(Color::Dark) => 3,
+        }
+    }
+
+    pub fn write(self, target: &mut u8, index: u8) {
+        *target |= self.to_bits() << index;
+    }
+
+    pub fn from_iter<'s>(iter: impl Iterator<Item = u8> + 's) -> impl Iterator<Item = Module> + 's {
+        struct U82bitIter(u8, u8);
+        impl Iterator for U82bitIter {
+            type Item = u8;
+            fn next(&mut self) -> Option<u8> {
+                if self.1 == 8 {
+                    None
+                } else {
+                    let result = self.0 << self.1;
+                    self.1 += 2;
+                    Some(result)
+                }
+            }
+        }
+
+        iter.flat_map(|x| U82bitIter(x, 0)).map(|m| Module::from_bits(m))
+    }
+
     /// Apply a mask to the unmasked modules.
     ///
     ///     use qrcode::canvas::Module;
     ///     use qrcode::types::Color;
     ///
-    ///     assert_eq!(Module::Unmasked(Color::Light).mask(true), Module::Masked(Color::Dark));
-    ///     assert_eq!(Module::Unmasked(Color::Dark).mask(true), Module::Masked(Color::Light));
-    ///     assert_eq!(Module::Unmasked(Color::Light).mask(false), Module::Masked(Color::Light));
-    ///     assert_eq!(Module::Masked(Color::Dark).mask(true), Module::Masked(Color::Dark));
-    ///     assert_eq!(Module::Masked(Color::Dark).mask(false), Module::Masked(Color::Dark));
+    ///     assert_eq!(Module::Unmasked(Color::Light).mask(true), Color::Dark);
+    ///     assert_eq!(Module::Unmasked(Color::Dark).mask(true), Color::Light);
+    ///     assert_eq!(Module::Unmasked(Color::Light).mask(false), Color::Light);
+    ///     assert_eq!(Module::Masked(Color::Dark).mask(true), Color::Dark);
+    ///     assert_eq!(Module::Masked(Color::Dark).mask(false), Color::Dark);
     ///
     pub fn mask(self, should_invert: bool) -> Color {
         match (self, should_invert) {
@@ -75,7 +120,7 @@ impl Module {
 pub struct Canvas<V: QrSpec> {
     /// The modules of the QR code. Modules are arranged in left-to-right, then
     /// top-to-bottom order.
-    modules: Vec<Module, V::CanvasSize>,
+    modules: Vec<u8, V::CanvasSize>,
 }
 
 impl<V: QrSpec> Clone for Canvas<V> {
@@ -88,54 +133,55 @@ impl<V: QrSpec> Canvas<V> {
     /// Constructs a new canvas big enough for a QR code of the given version.
     pub fn new() -> Self {
         let mut modules = Vec::new();
-        modules.resize((V::WIDTH * V::WIDTH).as_usize(), Module::EMPTY).unwrap();
+        modules.resize((V::WIDTH * V::WIDTH).as_usize() / 4 + 1, 0).unwrap();
         Self { modules }
     }
 
-    ///// Converts the canvas into a human-readable string.
-    //#[cfg(test)]
-    //fn to_debug_str(&self) -> String {
-    //    let width = V::WIDTH;
-    //    let mut res = String::with_capacity((width * (width + 1)) as usize);
-    //    for y in 0..width {
-    //        res.push('\n');
-    //        for x in 0..width {
-    //            res.push(match self.get(x, y) {
-    //                Module::Empty => '?',
-    //                Module::Masked(Color::Light) => '.',
-    //                Module::Masked(Color::Dark) => '#',
-    //                Module::Unmasked(Color::Light) => '-',
-    //                Module::Unmasked(Color::Dark) => '*',
-    //            });
-    //        }
-    //    }
-    //    res
-    //}
+    /// Converts the canvas into a human-readable string.
+    #[cfg(test)]
+    fn to_debug_str(&self) -> String {
+        let width = V::WIDTH;
+        let mut res = String::with_capacity((width * (width + 1)) as usize);
+        for y in 0..width {
+            res.push('\n');
+            for x in 0..width {
+                res.push(match self.get(x, y) {
+                    Module::Masked(Color::Light) => '.',
+                    Module::Masked(Color::Dark) => '#',
+                    Module::Unmasked(Color::Light) => '-',
+                    Module::Unmasked(Color::Dark) => '*',
+                });
+            }
+        }
+        res
+    }
 
-    fn coords_to_index(&self, x: i16, y: i16) -> usize {
+    fn coords_to_index(&self, x: i16, y: i16) -> (usize, u8) {
         let x = if x < 0 { x + V::WIDTH } else { x }.as_usize();
         let y = if y < 0 { y + V::WIDTH } else { y }.as_usize();
-        y * V::WIDTH.as_usize() + x
+        let index = y * V::WIDTH.as_usize() + x;
+        (index / 4, (index % 4) as u8)
     }
 
     /// Obtains a module at the given coordinates. For convenience, negative
     /// coordinates will wrap around.
     pub fn get(&self, x: i16, y: i16) -> Module {
-        self.modules[self.coords_to_index(x, y)]
+        let (index, sub_index) = self.coords_to_index(x, y);
+        Module::from_u8(self.modules[index], sub_index)
     }
 
     /// Sets the color of a functional module at the given coordinates. For
     /// convenience, negative coordinates will wrap around.
     pub fn put(&mut self, x: i16, y: i16, color: Color) {
-        let index = self.coords_to_index(x, y);
-        self.modules[index] = Module::Masked(color);
+        let (index, sub_index) = self.coords_to_index(x, y);
+        Module::Masked(color).write(&mut self.modules[index], sub_index);
     }
 
     /// Sets the color of a functional module at the given coordinates. For
     /// convenience, negative coordinates will wrap around.
     pub fn put_unmasked(&mut self, x: i16, y: i16, color: Color) {
-        let index = self.coords_to_index(x, y);
-        self.modules[index] = Module::Unmasked(color);
+        let (index, sub_index) = self.coords_to_index(x, y);
+        Module::Unmasked(color).write(&mut self.modules[index], sub_index);
     }
 }
 
@@ -1399,43 +1445,46 @@ impl<V: QrSpec> Canvas<V> {
     }
 }
 
-/*
+
 #[cfg(test)]
 mod draw_codewords_test {
     use crate::canvas::Canvas;
     use crate::types::{EcLevel, Version};
+    use crate::spec::{Version1, EcLevelL};
 
-    #[test]
-    fn test_micro_qr_1() {
-        let mut c = Canvas::new(Version::Micro(1), EcLevel::L);
-        c.draw_all_functional_patterns();
-        c.draw_data(b"\x6e\x5d\xe2", b"\x2b\x63");
-        assert_eq!(
-            &*c.to_debug_str(),
-            "\n\
-             #######.#.#\n\
-             #.....#..-*\n\
-             #.###.#..**\n\
-             #.###.#..*-\n\
-             #.###.#..**\n\
-             #.....#..*-\n\
-             #######..*-\n\
-             .........-*\n\
-             #........**\n\
-             .***-**---*\n\
-             #---*-*-**-"
-        );
-    }
+    //#[test]
+    //fn test_micro_qr_1() {
+    //    let mut c = Canvas::new(Version::Micro(1), EcLevel::L);
+    //    c.draw_all_functional_patterns();
+    //    c.draw_data(b"\x6e\x5d\xe2", b"\x2b\x63");
+    //    assert_eq!(
+    //        &*c.to_debug_str(),
+    //        "\n\
+    //         #######.#.#\n\
+    //         #.....#..-*\n\
+    //         #.###.#..**\n\
+    //         #.###.#..*-\n\
+    //         #.###.#..**\n\
+    //         #.....#..*-\n\
+    //         #######..*-\n\
+    //         .........-*\n\
+    //         #........**\n\
+    //         .***-**---*\n\
+    //         #---*-*-**-"
+    //    );
+    //}
 
     #[test]
     fn test_qr_2() {
-        let mut c = Canvas::new(Version::Normal(2), EcLevel::L);
+        let mut c = Canvas::<Version1<EcLevelL>>::new();
         c.draw_all_functional_patterns();
-        c.draw_data(
-            b"\x92I$\x92I$\x92I$\x92I$\x92I$\x92I$\x92I$\x92I$\
-              \x92I$\x92I$\x92I$\x92I$\x92I$\x92I$\x92I$",
-            b"",
-        );
+        //
+        //c.draw_data(
+        //    b"\x92I$\x92I$\x92I$\x92I$\x92I$\x92I$\x92I$\x92I$\
+        //      \x92I$\x92I$\x92I$\x92I$\x92I$\x92I$\x92I$",
+        //    b"",
+        //);
+        println!("{}", c.to_debug_str());
         assert_eq!(
             &*c.to_debug_str(),
             "\n\
@@ -1466,7 +1515,7 @@ mod draw_codewords_test {
              #######..*---*--*----*--*"
         );
     }
-}*/
+}
 
 //}}}
 //------------------------------------------------------------------------------
@@ -1800,8 +1849,8 @@ impl<V: QrSpec> Canvas<V> {
     /// round the result every 5%, but the difference should be negligible and
     /// should not affect which mask is chosen.
     fn compute_balance_penalty_score(&self) -> u16 {
-        let dark_modules = self.modules.iter().filter(|m| m.is_dark()).count();
-        let total_modules = self.modules.len();
+        let dark_modules = Module::from_iter(self.modules.iter().copied()).filter(|m| m.is_dark()).count();
+        let total_modules = self.modules.len() * 4;
         let ratio = dark_modules * 200 / total_modules;
         if ratio >= 100 { ratio - 100 } else { 100 - ratio }.as_u16()
     }
@@ -1999,8 +2048,25 @@ impl<V: QrSpec> Canvas<V> {
     }
 
     /// Convert the modules into a vector of colors.
-    pub fn into_colors(self) -> impl Iterator<Item = Color> {
-        self.modules.into_iter().map(Color::from)
+    pub fn colors(&self) -> impl Iterator<Item = Color> + '_ {
+        Module::from_iter(self.modules.iter().copied()).map(Color::from)
+    }
+
+    /// Convert the modules into a vector of colors.
+    pub fn colors_bits(&self) -> Vec<u8, V::ColorSize> {
+        let mut result = Vec::new();
+        let mut buf = 0_u8;
+        for (i, color) in self.colors().enumerate() {
+            buf <<= 1;
+            if let Color::Dark = color {
+                buf |= 0b1
+            }
+            if i % 8 == 7 {
+                result.push(buf).unwrap();
+                buf = 0;
+            }
+        }
+        result
     }
 }
 

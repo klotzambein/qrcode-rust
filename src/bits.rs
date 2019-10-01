@@ -440,17 +440,17 @@ mod alphanumeric_tests {
         );
     }
 
-    //#[test]
-    //fn test_micro_qr_unsupported() {
+    // #[test]
+    // fn test_micro_qr_unsupported() {
     //    let mut bits = Bits::new(Version::Micro(1));
     //    assert_eq!(bits.push_alphanumeric_data(b"A"), Err(QrError::UnsupportedCharacterSet));
-    //}
+    // }
 
-    //#[test]
-    //fn test_data_too_long() {
+    // #[test]
+    // fn test_data_too_long() {
     //    let mut bits = Bits::new(Version::Micro(2));
     //    assert_eq!(bits.push_alphanumeric_data(b"ABCDEFGH"), Err(QrError::DataTooLong));
-    //}
+    // }
 }
 
 
@@ -496,17 +496,17 @@ mod byte_tests {
         );
     }
 
-    //#[test]
-    //fn test_micro_qr_unsupported() {
+    // #[test]
+    // fn test_micro_qr_unsupported() {
     //    let mut bits = Bits::new(Version::Micro(2));
     //    assert_eq!(bits.push_byte_data(b"?"), Err(QrError::UnsupportedCharacterSet));
-    //}
+    // }
 
-    //#[test]
-    //fn test_data_too_long() {
+    // #[test]
+    // fn test_data_too_long() {
     //    let mut bits = Bits::new(Version::Micro(3));
     //    assert_eq!(bits.push_byte_data(b"0123456701234567"), Err(QrError::DataTooLong));
-    //}
+    // }
 }
 
 
@@ -719,44 +719,44 @@ mod finish_tests {
         );
     }
 
-    /*#[test]
-    fn test_too_long() {
-        let mut bits = Bits::new(Version::Micro(1));
-        assert_eq!(bits.push_numeric_data(b"9999999"), Ok(()));
-        assert_eq!(bits.push_terminator(EcLevel::L), Err(QrError::DataTooLong));
-    }
+    // #[test]
+    // fn test_too_long() {
+    //     let mut bits = Bits::new(Version::Micro(1));
+    //     assert_eq!(bits.push_numeric_data(b"9999999"), Ok(()));
+    //     assert_eq!(bits.push_terminator(EcLevel::L), Err(QrError::DataTooLong));
+    // }
 
-    #[test]
-    fn test_no_terminator() {
-        let mut bits = Bits::new(Version::Micro(1));
-        assert_eq!(bits.push_numeric_data(b"99999"), Ok(()));
-        assert_eq!(bits.push_terminator(EcLevel::L), Ok(()));
-        assert_eq!(bits.into_bytes(), &[0b101_11111, 0b00111_110, 0b0011__0000]);
-    }
+    // #[test]
+    // fn test_no_terminator() {
+    //    let mut bits = Bits::new(Version::Micro(1));
+    //    assert_eq!(bits.push_numeric_data(b"99999"), Ok(()));
+    //    assert_eq!(bits.push_terminator(EcLevel::L), Ok(()));
+    //    assert_eq!(bits.into_bytes(), &[0b101_11111, 0b00111_110, 0b0011__0000]);
+    // }
 
-    #[test]
-    fn test_no_padding() {
-        let mut bits = Bits::new(Version::Micro(1));
-        assert_eq!(bits.push_numeric_data(b"9999"), Ok(()));
-        assert_eq!(bits.push_terminator(EcLevel::L), Ok(()));
-        assert_eq!(bits.into_bytes(), &[0b100_11111, 0b00111_100, 0b1_000__0000]);
-    }
+    // #[test]
+    // fn test_no_padding() {
+    //     let mut bits = Bits::new(Version::Micro(1));
+    //     assert_eq!(bits.push_numeric_data(b"9999"), Ok(()));
+    //     assert_eq!(bits.push_terminator(EcLevel::L), Ok(()));
+    //     assert_eq!(bits.into_bytes(), &[0b100_11111, 0b00111_100, 0b1_000__0000]);
+    // }
 
-    #[test]
-    fn test_micro_version_1_half_byte_padding() {
-        let mut bits = Bits::new(Version::Micro(1));
-        assert_eq!(bits.push_numeric_data(b"999"), Ok(()));
-        assert_eq!(bits.push_terminator(EcLevel::L), Ok(()));
-        assert_eq!(bits.into_bytes(), &[0b011_11111, 0b00111_000, 0b0000__0000]);
-    }
+    // #[test]
+    // fn test_micro_version_1_half_byte_padding() {
+    //     let mut bits = Bits::new(Version::Micro(1));
+    //     assert_eq!(bits.push_numeric_data(b"999"), Ok(()));
+    //     assert_eq!(bits.push_terminator(EcLevel::L), Ok(()));
+    //     assert_eq!(bits.into_bytes(), &[0b011_11111, 0b00111_000, 0b0000__0000]);
+    // }
 
-    #[test]
-    fn test_micro_version_1_full_byte_padding() {
-        let mut bits = Bits::new(Version::Micro(1));
-        assert_eq!(bits.push_numeric_data(b""), Ok(()));
-        assert_eq!(bits.push_terminator(EcLevel::L), Ok(()));
-        assert_eq!(bits.into_bytes(), &[0b000_000_00, 0b11101100, 0]);
-    }*/
+    // #[test]
+    // fn test_micro_version_1_full_byte_padding() {
+    //     let mut bits = Bits::new(Version::Micro(1));
+    //     assert_eq!(bits.push_numeric_data(b""), Ok(()));
+    //     assert_eq!(bits.push_terminator(EcLevel::L), Ok(()));
+    //     assert_eq!(bits.into_bytes(), &[0b000_000_00, 0b11101100, 0]);
+    // }
 }
 
 
@@ -815,11 +815,11 @@ mod encode_tests {
         );
     }
 
-    /*#[test]
-    fn test_auto_mode_switch() {
-        let res = encode(b"123A", Version::Micro(2), EcLevel::L);
-        assert_eq!(res, Ok(&[0b0_0011_000, 0b1111011_1, 0b001_00101, 0b0_00000__00, 0b11101100]));
-    }*/
+    // #[test]
+    // fn test_auto_mode_switch() {
+    //     let res = encode(b"123A", Version::Micro(2), EcLevel::L);
+    //     assert_eq!(res, Ok(&[0b0_0011_000, 0b1111011_1, 0b001_00101, 0b0_00000__00, 0b11101100]));
+    // }
 
     #[test]
     fn test_too_long() {

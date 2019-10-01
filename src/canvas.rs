@@ -331,26 +331,26 @@ mod finder_pattern_tests {
         );
     }
 
-    /*#[test]
-    fn test_micro_qr() {
-        let mut c = Canvas::new(Version::Micro(1), EcLevel::L);
-        c.draw_finder_patterns();
-        assert_eq!(
-            &*c.to_debug_str(),
-            "\n\
-             #######.---\n\
-             #.....#.---\n\
-             #.###.#.---\n\
-             #.###.#.---\n\
-             #.###.#.---\n\
-             #.....#.---\n\
-             #######.---\n\
-             ........---\n\
-             -----------\n\
-             -----------\n\
-             -----------"
-        );
-    }*/
+    // #[test]
+    // fn test_micro_qr() {
+    //     let mut c = Canvas::new(Version::Micro(1), EcLevel::L);
+    //     c.draw_finder_patterns();
+    //     assert_eq!(
+    //         &*c.to_debug_str(),
+    //         "\n\
+    //          #######.---\n\
+    //          #.....#.---\n\
+    //          #.###.#.---\n\
+    //          #.###.#.---\n\
+    //          #.###.#.---\n\
+    //          #.....#.---\n\
+    //          #######.---\n\
+    //          ........---\n\
+    //          -----------\n\
+    //          -----------\n\
+    //          -----------"
+    //     );
+    // }
 }
 
 
@@ -655,26 +655,26 @@ mod timing_pattern_tests {
         );
     }
 
-    /*#[test]
-    fn test_draw_timing_patterns_micro_qr() {
-        let mut c = Canvas::new(Version::Micro(1), EcLevel::L);
-        c.draw_timing_patterns();
-        assert_eq!(
-            &*c.to_debug_str(),
-            "\n\
-             --------#.#\n\
-             -----------\n\
-             -----------\n\
-             -----------\n\
-             -----------\n\
-             -----------\n\
-             -----------\n\
-             -----------\n\
-             #----------\n\
-             .----------\n\
-             #----------"
-        );
-    }*/
+    // #[test]
+    // fn test_draw_timing_patterns_micro_qr() {
+    //     let mut c = Canvas::new(Version::Micro(1), EcLevel::L);
+    //     c.draw_timing_patterns();
+    //     assert_eq!(
+    //         &*c.to_debug_str(),
+    //         "\n\
+    //          --------#.#\n\
+    //          -----------\n\
+    //          -----------\n\
+    //          -----------\n\
+    //          -----------\n\
+    //          -----------\n\
+    //          -----------\n\
+    //          -----------\n\
+    //          #----------\n\
+    //          .----------\n\
+    //          #----------"
+    //     );
+    // }
 }
 
 
@@ -738,26 +738,26 @@ mod draw_version_info_tests {
     use crate::canvas::Canvas;
     use crate::spec::{Version1, Version7, EcLevelL};
 
-    /*#[test]
-    fn test_draw_number() {
-        let mut c = Canvas::new(Version::Micro(1), EcLevel::L);
-        c.draw_number(0b10101101, 8, Color::Dark, Color::Light, &[(0, 0), (0, -1), (-2, -2), (-2, 0)]);
-        assert_eq!(
-            &*c.to_debug_str(),
-            "\n\
-             #--------.-\n\
-             -----------\n\
-             -----------\n\
-             -----------\n\
-             -----------\n\
-             -----------\n\
-             -----------\n\
-             -----------\n\
-             -----------\n\
-             ---------#-\n\
-             .----------"
-        );
-    }*/
+    // #[test]
+    // fn test_draw_number() {
+    //     let mut c = Canvas::new(Version::Micro(1), EcLevel::L);
+    //     c.draw_number(0b10101101, 8, Color::Dark, Color::Light, &[(0, 0), (0, -1), (-2, -2), (-2, 0)]);
+    //     assert_eq!(
+    //         &*c.to_debug_str(),
+    //         "\n\
+    //          #--------.-\n\
+    //          -----------\n\
+    //          -----------\n\
+    //          -----------\n\
+    //          -----------\n\
+    //          -----------\n\
+    //          -----------\n\
+    //          -----------\n\
+    //          -----------\n\
+    //          ---------#-\n\
+    //          .----------"
+    //     );
+    // }
 
     #[test]
     fn test_draw_version_info_1() {
@@ -877,26 +877,26 @@ mod draw_version_info_tests {
         );
     }
 
-    /*#[test]
-    fn test_draw_reserved_format_info_patterns_micro_qr() {
-        let mut c = Canvas::new(Version::Micro(1), EcLevel::L);
-        c.draw_reserved_format_info_patterns();
-        assert_eq!(
-            &*c.to_debug_str(),
-            "\n\
-             -----------\n\
-             --------.--\n\
-             --------.--\n\
-             --------.--\n\
-             --------.--\n\
-             --------.--\n\
-             --------.--\n\
-             --------.--\n\
-             -........--\n\
-             -----------\n\
-             -----------"
-        );
-    }*/
+    // #[test]
+    // fn test_draw_reserved_format_info_patterns_micro_qr() {
+    //     let mut c = Canvas::new(Version::Micro(1), EcLevel::L);
+    //     c.draw_reserved_format_info_patterns();
+    //     assert_eq!(
+    //         &*c.to_debug_str(),
+    //         "\n\
+    //          -----------\n\
+    //          --------.--\n\
+    //          --------.--\n\
+    //          --------.--\n\
+    //          --------.--\n\
+    //          --------.--\n\
+    //          --------.--\n\
+    //          --------.--\n\
+    //          -........--\n\
+    //          -----------\n\
+    //          -----------"
+    //     );
+    // }
 }
 
 
@@ -1103,26 +1103,26 @@ mod all_functional_patterns_tests {
         );
     }
 
-    /*#[test]
-    fn test_all_functional_patterns_micro_qr() {
-        let mut c = Canvas::new(Version::Micro(1), EcLevel::L);
-        c.draw_all_functional_patterns();
-        assert_eq!(
-            &*c.to_debug_str(),
-            "\n\
-             #######.#.#\n\
-             #.....#..--\n\
-             #.###.#..--\n\
-             #.###.#..--\n\
-             #.###.#..--\n\
-             #.....#..--\n\
-             #######..--\n\
-             .........--\n\
-             #........--\n\
-             .----------\n\
-             #----------"
-        );
-    }*/
+    // #[test]
+    // fn test_all_functional_patterns_micro_qr() {
+    //     let mut c = Canvas::new(Version::Micro(1), EcLevel::L);
+    //     c.draw_all_functional_patterns();
+    //     assert_eq!(
+    //         &*c.to_debug_str(),
+    //         "\n\
+    //          #######.#.#\n\
+    //          #.....#..--\n\
+    //          #.###.#..--\n\
+    //          #.###.#..--\n\
+    //          #.###.#..--\n\
+    //          #.....#..--\n\
+    //          #######..--\n\
+    //          .........--\n\
+    //          #........--\n\
+    //          .----------\n\
+    //          #----------"
+    //     );
+    // }
 
     #[test]
     fn test_is_functional_qr_1() {
@@ -1447,8 +1447,8 @@ mod draw_codewords_test {
     use crate::canvas::Canvas;
     use crate::spec::{Version2, EcLevelL};
 
-    //#[test]
-    //fn test_micro_qr_1() {
+    // #[test]
+    // fn test_micro_qr_1() {
     //    let mut c = Canvas::new(Version::Micro(1), EcLevel::L);
     //    c.draw_all_functional_patterns();
     //    c.draw_data(b"\x6e\x5d\xe2", b"\x2b\x63");
@@ -1467,7 +1467,7 @@ mod draw_codewords_test {
     //         .***-**---*\n\
     //         #---*-*-**-"
     //    );
-    //}
+    // }
 
     #[test]
     fn test_qr_2() {
@@ -1707,28 +1707,28 @@ mod mask_tests {
         );
     }
 
-    /*#[test]
-    fn test_draw_format_info_patterns_micro_qr() {
-        let mut c = Canvas::new(Version::Micro(2), EcLevel::L);
-        c.draw_format_info_patterns(MaskPattern::LargeCheckerboard);
-        assert_eq!(
-            &*c.to_debug_str(),
-            "\n\
-             -------------\n\
-             --------#----\n\
-             --------.----\n\
-             --------.----\n\
-             --------#----\n\
-             --------#----\n\
-             --------.----\n\
-             --------.----\n\
-             -#.#....#----\n\
-             -------------\n\
-             -------------\n\
-             -------------\n\
-             -------------"
-        );
-    }*/
+    // #[test]
+    // fn test_draw_format_info_patterns_micro_qr() {
+    //     let mut c = Canvas::new(Version::Micro(2), EcLevel::L);
+    //     c.draw_format_info_patterns(MaskPattern::LargeCheckerboard);
+    //     assert_eq!(
+    //         &*c.to_debug_str(),
+    //         "\n\
+    //          -------------\n\
+    //          --------#----\n\
+    //          --------.----\n\
+    //          --------.----\n\
+    //          --------#----\n\
+    //          --------#----\n\
+    //          --------.----\n\
+    //          --------.----\n\
+    //          -#.#....#----\n\
+    //          -------------\n\
+    //          -------------\n\
+    //          -------------\n\
+    //          -------------"
+    //     );
+    // }
 }
 
 
@@ -1954,55 +1954,55 @@ mod penalty_tests {
         assert_eq!(c.compute_balance_penalty_score(), 2);
     }
 
-    /*#[test]
-    fn test_penalty_score_light_sides() {
-        static HORIZONTAL_SIDE: [Color; 17] = [
-            Color::Dark,
-            Color::Light,
-            Color::Light,
-            Color::Dark,
-            Color::Dark,
-            Color::Dark,
-            Color::Light,
-            Color::Light,
-            Color::Dark,
-            Color::Light,
-            Color::Dark,
-            Color::Light,
-            Color::Light,
-            Color::Dark,
-            Color::Light,
-            Color::Light,
-            Color::Light,
-        ];
-        static VERTICAL_SIDE: [Color; 17] = [
-            Color::Dark,
-            Color::Dark,
-            Color::Dark,
-            Color::Light,
-            Color::Light,
-            Color::Dark,
-            Color::Dark,
-            Color::Light,
-            Color::Dark,
-            Color::Light,
-            Color::Dark,
-            Color::Light,
-            Color::Dark,
-            Color::Light,
-            Color::Light,
-            Color::Dark,
-            Color::Light,
-        ];
+    // #[test]
+    // fn test_penalty_score_light_sides() {
+    //     static HORIZONTAL_SIDE: [Color; 17] = [
+    //         Color::Dark,
+    //         Color::Light,
+    //         Color::Light,
+    //         Color::Dark,
+    //         Color::Dark,
+    //         Color::Dark,
+    //         Color::Light,
+    //         Color::Light,
+    //         Color::Dark,
+    //         Color::Light,
+    //         Color::Dark,
+    //         Color::Light,
+    //         Color::Light,
+    //         Color::Dark,
+    //         Color::Light,
+    //         Color::Light,
+    //         Color::Light,
+    //     ];
+    //     static VERTICAL_SIDE: [Color; 17] = [
+    //         Color::Dark,
+    //         Color::Dark,
+    //         Color::Dark,
+    //         Color::Light,
+    //         Color::Light,
+    //         Color::Dark,
+    //         Color::Dark,
+    //         Color::Light,
+    //         Color::Dark,
+    //         Color::Light,
+    //         Color::Dark,
+    //         Color::Light,
+    //         Color::Dark,
+    //         Color::Light,
+    //         Color::Light,
+    //         Color::Dark,
+    //         Color::Light,
+    //     ];
 
-        let mut c = Canvas::new(Version::Micro(4), EcLevel::Q);
-        for i in 0_i16..17 {
-            c.put(i, -1, HORIZONTAL_SIDE[i as usize]);
-            c.put(-1, i, VERTICAL_SIDE[i as usize]);
-        }
+    //     let mut c = Canvas::new(Version::Micro(4), EcLevel::Q);
+    //     for i in 0_i16..17 {
+    //         c.put(i, -1, HORIZONTAL_SIDE[i as usize]);
+    //         c.put(-1, i, VERTICAL_SIDE[i as usize]);
+    //     }
 
-        assert_eq!(c.compute_light_side_penalty_score(), 168);
-    }*/
+    //     assert_eq!(c.compute_light_side_penalty_score(), 168);
+    // }
 }
 
 //}}}

@@ -58,6 +58,14 @@ pub enum Color {
 }
 
 impl Color {
+    pub fn from_bit(bit: u8) -> Color {
+        if bit & 0b1 == 0b1 {
+            Color::Dark
+        } else {
+            Color::Light
+        }
+    }
+
     /// Selects a value according to color of the module. Equivalent to
     /// `if self != Color::Light { dark } else { light }`.
     ///

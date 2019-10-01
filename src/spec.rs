@@ -15,7 +15,7 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 /// Every entry is a 4-tuple. Take `DATA_BYTES_PER_BLOCK[39][3] == (15, 20, 16, 61)`
 /// as an example, this means in version 40 with correction level H, there are
 /// 20 blocks with 15 bytes in size, and 61 blocks with 16 bytes in size.
-/// 
+///
 /// (byte size block 1, block count 1, byte size block 2, block count 2,
 /// ec bytes per block)
 static DATA_BYTES_PER_BLOCK: [[(usize, usize, usize, usize, usize); 4]; 44] = [
@@ -144,78 +144,79 @@ impl Display for TypeNum {
 ```
 */
 
-use crate::types::{Color, EcLevel, Version};
+use crate::types::{EcLevel, Version};
 use core::marker::PhantomData;
 use heapless::consts::*;
 use heapless::ArrayLength;
 use typenum::{UInt, UTerm, B0, B1};
 
 pub trait QrSpec {
-   /// EC_BYTES_PER_BLOCK * (BLOCK_1_COUNT + BLOCK_2_COUNT) + BLOCK_1_COUNT *
-   /// BLOCK_1_SIZE + BLOCK_2_COUNT * BLOCK_2_SIZE
-   type TotalSize: ArrayLength<u8>;
-   /// MAX(BLOCK_1_SIZE, BLOCK_2_SIZE) + EC_BYTES_PER_BLOCK
-   type ECGenBufferSize: ArrayLength<u8>;
-   /// EC_BYTES_PER_BLOCK * (BLOCK_1_COUNT + BLOCK_2_COUNT)
-   type ECBlocksSize: ArrayLength<u8>;
-   /// WIDTH * WIDTH / 4 + 1
-   type CanvasSize: ArrayLength<u8>;
-   /// WIDTH * WIDTH / 8 + 1
-   type ColorSize: ArrayLength<u8>;
-   /// BLOCK_1_COUNT * BLOCK_1_SIZE + BLOCK_2_COUNT * BLOCK_2_SIZE
-   type BitsSize: ArrayLength<u8>;
+    /// EC_BYTES_PER_BLOCK * (BLOCK_1_COUNT + BLOCK_2_COUNT) + BLOCK_1_COUNT *
+    /// BLOCK_1_SIZE + BLOCK_2_COUNT * BLOCK_2_SIZE
+    type TotalSize: ArrayLength<u8>;
+    /// MAX(BLOCK_1_SIZE, BLOCK_2_SIZE) + EC_BYTES_PER_BLOCK
+    type ECGenBufferSize: ArrayLength<u8>;
+    /// EC_BYTES_PER_BLOCK * (BLOCK_1_COUNT + BLOCK_2_COUNT)
+    type ECBlocksSize: ArrayLength<u8>;
+    /// WIDTH * WIDTH / 4 + 1
+    type CanvasSize: ArrayLength<u8>;
+    /// WIDTH * WIDTH / 8 + 1
+    type ColorSize: ArrayLength<u8>;
+    /// BLOCK_1_COUNT * BLOCK_1_SIZE + BLOCK_2_COUNT * BLOCK_2_SIZE
+    type BitsSize: ArrayLength<u8>;
 
-   const WIDTH: i16;
-   const BLOCK_1_SIZE: usize;
-   const BLOCK_1_COUNT: usize;
-   const BLOCK_2_SIZE: usize;
-   const BLOCK_2_COUNT: usize;
-   const EC_BYTES_PER_BLOCK: usize;
-   const VERSION: Version;
-   const EC_LEVEL: EcLevel;
+    const WIDTH: i16;
+    const BLOCK_1_SIZE: usize;
+    const BLOCK_1_COUNT: usize;
+    const BLOCK_2_SIZE: usize;
+    const BLOCK_2_COUNT: usize;
+    const EC_BYTES_PER_BLOCK: usize;
+    const VERSION: Version;
+    const EC_LEVEL: EcLevel;
+    const AREA: usize = (Self::WIDTH * Self::WIDTH) as usize;
 }
 
 pub trait EcLvl {
-   const EC_LEVEL: EcLevel;
+    const EC_LEVEL: EcLevel;
 }
 
 pub struct EcLevelL;
 impl EcLvl for EcLevelL {
-   const EC_LEVEL: EcLevel = EcLevel::L;
+    const EC_LEVEL: EcLevel = EcLevel::L;
 }
 pub struct EcLevelM;
 impl EcLvl for EcLevelM {
-   const EC_LEVEL: EcLevel = EcLevel::M;
+    const EC_LEVEL: EcLevel = EcLevel::M;
 }
 pub struct EcLevelQ;
 impl EcLvl for EcLevelQ {
-   const EC_LEVEL: EcLevel = EcLevel::Q;
+    const EC_LEVEL: EcLevel = EcLevel::Q;
 }
 pub struct EcLevelH;
 impl EcLvl for EcLevelH {
-   const EC_LEVEL: EcLevel = EcLevel::H;
+    const EC_LEVEL: EcLevel = EcLevel::H;
 }
 
 macro_rules! spec_normal_level {
-   ($name:ident, $level:ty, $ec_level:expr, $total_size:ty, $ec_gen_buffer_size:ty, $ec_blocks_size:ty, $color_size:ty, $canvas_size:ty, $bits_size:ty, $version_num:expr, $block_1_size:expr, $block_1_count:expr, $block_2_size:expr, $block_2_count:expr, $ec_bytes_per_block:expr) => {
-       impl QrSpec for $name<$level> {
-           type TotalSize = $total_size;
-           type ECGenBufferSize = $ec_gen_buffer_size;
-           type ECBlocksSize = $ec_blocks_size;
-           type CanvasSize = $canvas_size;
-           type ColorSize = $color_size;
-           type BitsSize = $bits_size;
+    ($name:ident, $level:ty, $ec_level:expr, $total_size:ty, $ec_gen_buffer_size:ty, $ec_blocks_size:ty, $color_size:ty, $canvas_size:ty, $bits_size:ty, $version_num:expr, $block_1_size:expr, $block_1_count:expr, $block_2_size:expr, $block_2_count:expr, $ec_bytes_per_block:expr) => {
+        impl QrSpec for $name<$level> {
+            type TotalSize = $total_size;
+            type ECGenBufferSize = $ec_gen_buffer_size;
+            type ECBlocksSize = $ec_blocks_size;
+            type CanvasSize = $canvas_size;
+            type ColorSize = $color_size;
+            type BitsSize = $bits_size;
 
-           const WIDTH: i16 = $version_num * 4 + 17;
-           const BLOCK_1_SIZE: usize = $block_1_size;
-           const BLOCK_1_COUNT: usize = $block_1_count;
-           const BLOCK_2_SIZE: usize = $block_2_size;
-           const BLOCK_2_COUNT: usize = $block_2_count;
-           const EC_BYTES_PER_BLOCK: usize = $ec_bytes_per_block;
-           const VERSION: Version = Version::Normal($version_num);
-           const EC_LEVEL: EcLevel = $ec_level;
-       }
-   };
+            const WIDTH: i16 = $version_num * 4 + 17;
+            const BLOCK_1_SIZE: usize = $block_1_size;
+            const BLOCK_1_COUNT: usize = $block_1_count;
+            const BLOCK_2_SIZE: usize = $block_2_size;
+            const BLOCK_2_COUNT: usize = $block_2_count;
+            const EC_BYTES_PER_BLOCK: usize = $ec_bytes_per_block;
+            const VERSION: Version = Version::Normal($version_num);
+            const EC_LEVEL: EcLevel = $ec_level;
+        }
+    };
 }
 
 macro_rules! spec_normal {

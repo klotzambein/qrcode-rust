@@ -97,7 +97,7 @@ impl<V: QrSpec> QrCode<V> {
         canvas.draw_all_functional_patterns();
         canvas.draw_data(&data_ec[..data_end], &data_ec[data_end..]);
         let canvas = canvas.apply_best_mask();
-        let content = canvas.colors_bits();
+        let content = canvas.color_line_bits();
         Ok(Self { content })
     }
 
@@ -148,8 +148,20 @@ impl<V: QrSpec> QrCode<V> {
                 }
             }
         }
+        let row_byte_width = (V::WIDTH as usize + 7) / 8;
+        let last_byte_empty_bits = row_byte_width * 8 - V::WIDTH as usize;
 
-        self.content.iter().flat_map(|b| BitIter(*b, 7)).map(Color::from_bit)
+        self.content
+            .iter()
+            .enumerate()
+            .flat_map(move |(i, b)| {
+                if i % row_byte_width < row_byte_width - 1 {
+                    BitIter(*b, 7)
+                } else {
+                    BitIter(*b, 7 - last_byte_empty_bits as u8)
+                }
+            })
+            .map(Color::from_bit)
     }
 
     // /// Converts the QR code to a vector of colors.
@@ -160,8 +172,8 @@ impl<V: QrSpec> QrCode<V> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{QrCode};
-    use crate::spec::{Version1, EcLevelM};
+    use crate::spec::{EcLevelM, Version1};
+    use crate::QrCode;
 
     #[test]
     fn test_annex_i_qr() {

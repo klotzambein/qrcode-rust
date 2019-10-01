@@ -2046,7 +2046,7 @@ impl<V: QrSpec> Canvas<V> {
     }
 
     /// Convert the modules into a vector of colors.
-    pub fn colors_bits(&self) -> Vec<u8, V::ColorSize> {
+    pub fn color_bits(&self) -> Vec<u8, V::ColorSize> {
         let mut result = Vec::new();
         let mut buf = 0_u8;
         for (i, color) in self.colors().enumerate() {
@@ -2060,6 +2060,31 @@ impl<V: QrSpec> Canvas<V> {
             }
         }
         result.push(buf).unwrap();
+        result
+    }
+
+    /// Convert the modules into a vector of colors.
+    pub fn color_line_bits(&self) -> Vec<u8, V::ColorSize> {
+        let mut result = Vec::new();
+        let mut buf = 0_u8;
+        let mut i = 0;
+        for color in self.colors() {
+            buf <<= 1;
+            if let Color::Dark = color {
+                buf |= 0b1
+            }
+            
+            i += 1;
+            if i % 8 == 0 {
+                result.push(buf).unwrap();
+                buf = 0;
+            }
+            if i == V::WIDTH {
+                result.push(buf).unwrap();
+                buf = 0;
+                i = 0;
+            }
+        }
         result
     }
 }

@@ -13,6 +13,5 @@ exclude = [
 edition = "2018"
 
 [dependencies]
-checked_int_cast = "1"
 heapless = "0.5.1"
-typenum = "1.11.2"
+typenum = { version = "1.11.2", features = ["no_std"] }

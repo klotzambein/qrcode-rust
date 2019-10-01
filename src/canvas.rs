@@ -2059,7 +2059,7 @@ impl<V: QrSpec> Canvas<V> {
                 buf = 0;
             }
         }
-        result.push(buf);
+        result.push(buf).unwrap();
         result
     }
 }
